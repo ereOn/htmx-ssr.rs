@@ -6,6 +6,7 @@
 
 use std::sync::Arc;
 
+use axum::{routing::get, Router};
 use tokio::sync::Mutex;
 use tracing::info;
 
@@ -29,10 +30,22 @@ async fn main() -> anyhow::Result<()> {
         // Set the options on the server from the environment.
         .with_options_from_env()?;
 
+    let subrouter = Router::new().route(
+        "/",
+        get(
+            |axum::extract::Path(a): axum::extract::Path<String>| async move {
+                format!("Hello, world! ({a})")
+            },
+        ),
+    );
+    let router = Router::new().nest("/foo/:id", subrouter);
+
     // Register the main controller as a controller.
     //
     // This registers the routes in the server with handlers that render the views.
-    let server = server.with_controller::<controller::MainController>();
+    let server = server
+        .with_router(router)
+        .with_controller::<controller::MainController>();
 
     server.serve().await.map_err(Into::into)
 }
@@ -46,6 +59,8 @@ async fn main() -> anyhow::Result<()> {
 mod views {
     use askama::Template;
     use htmxology::{DisplayDelegate, Fragment};
+
+    use crate::controller::AppRoute;
 
     /// The index page.
     #[derive(Template)]
@@ -91,7 +106,7 @@ mod views {
     #[derive(Debug)]
     pub(super) struct MenuItem {
         /// The URL of the menu item.
-        pub url: String,
+        pub url: AppRoute,
 
         /// The title of the menu item.
         pub title: String,
@@ -129,7 +144,7 @@ mod views {
     #[derive(Debug, Template)]
     #[template(path = "blocks/page/messages.html.jinja")]
     pub(super) struct PageMessages {
-        pub messages: Vec<super::model::Message>,
+        pub messages: Vec<(AppRoute, super::model::Message)>,
     }
 
     #[derive(Debug, Template)]
@@ -145,6 +160,8 @@ mod views {
 }
 
 mod model {
+    use crate::controller::AppRoute;
+
     /// The model.
     ///
     /// This can be anything you need, and would typically hold one or many database-access layer
@@ -195,17 +212,17 @@ mod model {
         fn default() -> Self {
             let items = vec![
                 MenuItem {
-                    url: "/dashboard".to_string(),
+                    url: AppRoute::Dashboard,
                     title: "Dashboard".to_string(),
                     icon: MenuItemIcon::Dashboard,
                 },
                 MenuItem {
-                    url: "/messages".to_string(),
+                    url: AppRoute::Messages,
                     title: "Messages".to_string(),
                     icon: MenuItemIcon::Messages,
                 },
                 MenuItem {
-                    url: "/settings".to_string(),
+                    url: AppRoute::Settings,
                     title: "Settings".to_string(),
                     icon: MenuItemIcon::Settings,
                 },
@@ -218,7 +235,7 @@ mod model {
     #[derive(Debug, Clone)]
     pub(super) struct MenuItem {
         /// The URL of the menu item.
-        pub url: String,
+        pub url: AppRoute,
 
         /// The title of the menu item.
         pub title: String,
@@ -265,7 +282,7 @@ mod controller {
     };
     use tokio::sync::Mutex;
 
-    /// The main controller.
+    /// The main application routes.
     #[derive(Debug, Clone, Route)]
     pub enum AppRoute {
         /// The dashboard route.
@@ -326,7 +343,20 @@ mod controller {
                     let model = state.model.lock().await;
                     let menu = Self::make_menu(model.deref(), 1);
                     let messages = model.messages.clone();
-                    let page = views::Page::Messages(views::PageMessages { messages });
+                    let page = views::Page::Messages(views::PageMessages {
+                        messages: messages
+                            .into_iter()
+                            .map(|message| {
+                                (
+                                    AppRoute::MessageDetail {
+                                        id: message.id,
+                                        red: Some(true),
+                                    },
+                                    message,
+                                )
+                            })
+                            .collect(),
+                    });
 
                     match htmx {
                         HtmxRequest::Classic => {

@@ -138,27 +138,25 @@ pub(super) fn derive(input: &mut syn::DeriveInput) -> syn::Result<proc_macro2::T
                         #field_ident: #field_ty
                     });
 
-                    match field
+                    let is_query = field
                         .attrs
                         .iter()
-                        .find(|attr| attr.path().is_ident(attributes::QUERY))
-                    {
-                        Some(_) => {
-                            query_args.push(quote_spanned! { field_ident.span() =>
-                                #field_ident
-                            });
-                            query_args_defs.push(quote_spanned! { field_ident.span() =>
-                                #[serde(default)]
-                                #field_ident: #field_ty
-                            });
-                            query_args_names.insert(field_ident.to_string(), field_ident.clone());
-                        }
-                        None => {
-                            path_args.push(quote_spanned! { field_ident.span() =>
-                                #field_ident
-                            });
-                            path_args_names.insert(field_ident.to_string(), field_ident.clone());
-                        }
+                        .any(|attr| attr.path().is_ident(attributes::QUERY));
+
+                    if is_query {
+                        query_args.push(quote_spanned! { field_ident.span() =>
+                            #field_ident
+                        });
+                        query_args_defs.push(quote_spanned! { field_ident.span() =>
+                            #[serde(default)]
+                            #field_ident: #field_ty
+                        });
+                        query_args_names.insert(field_ident.to_string(), field_ident.clone());
+                    } else {
+                        path_args.push(quote_spanned! { field_ident.span() =>
+                            #field_ident
+                        });
+                        path_args_names.insert(field_ident.to_string(), field_ident.clone());
                     }
                 }
 
