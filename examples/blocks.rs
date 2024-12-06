@@ -285,8 +285,11 @@ mod controller {
     /// The main application routes.
     #[derive(Debug, Clone, Route)]
     pub enum AppRoute {
-        /// The dashboard route.
+        /// The home route.
         #[url("/")]
+        Home,
+
+        /// The dashboard route.
         #[url("/dashboard")]
         Dashboard,
 
@@ -327,7 +330,7 @@ mod controller {
             let caching = htmxology::caching::CachingStrategy::default();
 
             match route {
-                AppRoute::Dashboard => {
+                AppRoute::Home | AppRoute::Dashboard => {
                     let menu = Self::make_menu(state.model.lock().await.deref(), 0);
                     let page = views::Page::Dashboard(views::PageDashboard {});
                     match htmx {

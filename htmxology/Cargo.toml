@@ -36,6 +36,7 @@ required-features = ["auto-reload", "interfaces", "examples"]
 
 [dependencies]
 htmxology-macros = { workspace = true, optional = true }
+htmxology-core.workspace = true
 
 anyhow = { workspace = true, optional = true }
 axum.workspace = true

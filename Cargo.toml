@@ -1,11 +1,12 @@
 [workspace]
-members = ["htmxology", "htmxology-macros"]
+members = ["htmxology", "htmxology-macros", "htmxology-core"]
 #default-members = ["htmxology"]
 resolver = "2"
 
 [workspace.dependencies]
 htmxology = { path = "./htmxology" }
 htmxology-macros = { path = "./htmxology-macros", version = "0.1.0" }
+htmxology-core = { path = "./htmxology-core", version = "0.1.0" }
 
 anyhow = "1"
 askama = { version = "0.12", features = ["with-axum"] }
