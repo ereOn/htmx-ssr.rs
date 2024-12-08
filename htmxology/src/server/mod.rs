@@ -329,8 +329,11 @@ impl<Model: Send + Sync + Clone + 'static> Server<Model> {
     }
 
     /// Register a controller with the server.
+    ///
+    /// This erases all registered routes and replaces them with the routes defined by the
+    /// controller.
     pub fn with_controller<Controller: super::Controller<Model = Model>>(mut self) -> Self {
-        self.router = Controller::Route::register_routes::<Controller>(self.router);
+        self.router = Controller::Route::make_router::<Controller>();
         self
     }
 }

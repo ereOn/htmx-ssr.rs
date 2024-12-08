@@ -10,7 +10,7 @@ mod route;
 ///
 /// This derive macro simply implements the `Fragment` trait for the annotated type.
 #[proc_macro_derive(Fragment, attributes(htmx))]
-pub fn derive_insert(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub fn derive_fragment(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let mut input = parse_macro_input!(input as syn::DeriveInput);
 
     fragment::derive(&mut input)
@@ -21,8 +21,8 @@ pub fn derive_insert(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
 /// Derive a route type.
 ///
 /// Route types are enum types that represent the possible routes in an HTMX application.
-#[proc_macro_derive(Route, attributes(url, query))]
-pub fn derive_router(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+#[proc_macro_derive(Route, attributes(route, subroute, query, body))]
+pub fn derive_route(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let mut input = parse_macro_input!(input as syn::DeriveInput);
 
     route::derive(&mut input)

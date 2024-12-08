@@ -15,8 +15,10 @@ optional parameters.
 
 There are two kinds of parameters:
 
-- Path parameters: extracted from the URL path, they are defined by their position in the route.
-- Query parameters: extracted from the URL query string, they are defined by their names.
+- Path parameters: extracted from the URL path, they are defined by their
+  position or names in the route.
+- Query parameters: extracted from the URL query string, they are not
+  explicitely declared in the route.
 
 ## Example
 
@@ -29,17 +31,17 @@ The following example shows how to define a set of routes for a simple web appli
 #[derive(Route)]
 enum AppRoute {
     /// A route with no parameters.
-    #[get("/")]
+    #[route("/", method="GET")]
     Home,
 
     /// A route with no parameters, as an empty tuple variant. This is not
     /// recommended but nevertheless supported.
-    #[get("/about")]
+    #[route("/about", method="GET")]
     About(),
 
     /// A route with no parameters, as an empty struct variant. This is not
     /// recommended but nevertheless supported.
-    #[get("/contact")]
+    #[route("/contact", method="GET")]
     Contact {},
 
     /// A route with a single path parameter, as struct variant.
@@ -47,25 +49,25 @@ enum AppRoute {
     /// In this case all the named parameters must exist in the struct variant,
     /// and all of them have to be used exactly once. Their order does not
     /// matter.
-    #[get("/user/{id}")]
+    #[route("/user/{id}", method="GET")]
     User { id: u32 },
 
     /// A route with a single path parameter, as a tuple variant.
     ///
     /// In this case there must be exactly as many parameters as there are
     /// tuple fields.
-    #[get("/product/{id}")]
+    #[route("/product/{id}", method="GET")]
     Product(u32),
 
     /// A route with multiple path parameters and query parameters.
     ///
-    /// The fields used in the query parameters must implement `Default`.
-    #[get("/user/search/{query}?sort={sort}&page={page}&filter={filter}")]
+    /// The query parameters are all parsed as one field, using serde::Deserialize.
+    #[route("/user/search/{term}", method="GET")]
     UserSearch {
-        query: String,
-        sort: Sort,
-        page: u32,
-        filter: Option<String>,
+        term: String,
+
+        #[query]
+        query: UserSearchQuery,
     },
 
     /// A route with multiple path parameters and query parameters, as a tuple variant.
@@ -80,16 +82,16 @@ enum AppRoute {
     ///
     /// Identifiers names must be valid Rust identifiers regardless of the
     /// syntax used.
-    #[get("/products/search/{query}?sort={sort}&page&filter={filter}")]
-    ProductSearch(String, Sort, u32, Option<String>),
+    #[route("/products/search/{term}", method="GET")]
+    ProductSearch(String, #[query] UserSearchQuery),
 
     /// A route with a different HTTP method.
-    #[post("/user/{id}/profile")]
+    #[route("/user/{id}/profile", method="POST")]
     UpdateUserProfile { id: u32 },
 
     /// A route with a different HTTP method and query parameters.
-    #[delete("/user/{id}/profile?archive={archive}")]
-    DeleteUserProfile(u32, bool),
+    #[route("/user/{id}/profile", method="DELETE")]
+    DeleteUserProfile(u32, #[query] DeleteUserProfileQuery),
 
     /// A special sub-route variant that allows for better decoupling of the
     /// routes in an application.
@@ -128,7 +130,7 @@ enum AppRoute {
     ///
     /// Supported media types are `application/json` and
     /// `application/x-www-form-urlencoded`.
-    #[put("/user/{id}/profile")]
+    #[route("/user/{id}/profile", method="PUT")]
     UpdateUserProfile { 
         id: u32,
 
@@ -137,10 +139,10 @@ enum AppRoute {
     },
 
     /// A route with a body and query parameters.
-    #[post("/user/{id}/profile?create={create}")]
+    #[route("/user/{id}/profile", method="POST")]
     CreateUserProfile(
         u32,
-        bool,
+        #[query] CreateUserProfileQuery,
         #[body("application/x-www-form-urlencoded")] UserProfile,
     ),
 }

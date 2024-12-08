@@ -280,37 +280,43 @@ mod controller {
         htmx::{FragmentExt, Request as HtmxRequest},
         Controller,
     };
+    use serde::{Deserialize, Serialize};
     use tokio::sync::Mutex;
 
     /// The main application routes.
     #[derive(Debug, Clone, Route)]
     pub enum AppRoute {
         /// The home route.
-        #[url("/")]
+        #[route("/")]
         Home,
 
         /// The dashboard route.
-        #[url("/dashboard")]
+        #[route("/dashboard")]
         Dashboard,
 
         /// The messages route.
-        #[url("/messages")]
+        #[route("/messages")]
         Messages,
 
         /// The message detail route.
-        #[url("/messages/{id}")]
+        #[route("/messages/{id}")]
         MessageDetail {
             /// The message ID.
             id: u8,
 
-            /// Show the message in red.
             #[query]
-            red: Option<bool>,
+            query: MessageDetailQuery,
         },
 
         /// The settings route.
-        #[url("/settings")]
+        #[route("/settings")]
         Settings,
+    }
+
+    #[derive(Debug, Clone, Deserialize, Serialize)]
+    pub struct MessageDetailQuery {
+        /// Show the message in red.
+        red: Option<bool>,
     }
 
     /// The main controller implementation.
@@ -353,7 +359,7 @@ mod controller {
                                 (
                                     AppRoute::MessageDetail {
                                         id: message.id,
-                                        red: Some(true),
+                                        query: MessageDetailQuery { red: Some(true) },
                                     },
                                     message,
                                 )
@@ -370,7 +376,7 @@ mod controller {
                         }
                     }
                 }
-                AppRoute::MessageDetail { id, red } => {
+                AppRoute::MessageDetail { id, query } => {
                     let model = state.model.lock().await;
                     let menu = Self::make_menu(model.deref(), 1);
                     let message = match model
@@ -388,7 +394,7 @@ mod controller {
 
                     let page = views::Page::MessageDetail(views::PageMessageDetail {
                         message,
-                        red: red.unwrap_or_default(),
+                        red: query.red.unwrap_or_default(),
                     });
 
                     match htmx {
